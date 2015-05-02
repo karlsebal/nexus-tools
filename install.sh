@@ -18,6 +18,56 @@ FASTBOOT="/usr/bin/fastboot"
 UDEV="/etc/udev/rules.d/51-android.rules"
 OS=$(uname)
 ARCH=$(uname -m)
+KERN=$(uname -s)
+
+
+# detect operating system and 
+# make urls and infos
+
+if [ "$OS" == "Darwin" ]; then # Mac OS X
+	INFO="Mac OS X..."
+	ADBURL="mac-adb"
+	FBURL="mac-fastboot"
+
+elif [ "$(expr substr $KERN 1 5)" == "Linux" ]; then # Generic Linux
+
+	if [ "$ARCH" == "i386" ] || [ "$ARCH" == "i486" ] || 
+		[ "$ARCH" == "i586" ] || [ "$ARCH" == "amd64" ] ||
+		[ "$ARCH" == "x86_64" ] || [ "$ARCH" == "i686" ]; then # Linux on Intel x86/x86_64 CPU
+		INFO="Linux [Intel CPU]..."
+		ADBURL="linux-i386-adb"
+		FBURL="linux-i386-fastboot"
+
+	elif [ "$ARCH" == "arm" ] || [ "$ARCH" == "armv6l" ]; then # Linux on ARM CPU
+		echo "[WARN] The ADB binaries for ARM are out of date, and do not work on Android 4.2.2+"
+		INFO="Linux [ARM CPU]..."
+		ADBURL="linux-arm-adb"
+		FBURL="linux-arm-fastboot"
+
+	else
+		echo "[EROR] Your CPU platform could not be detected."
+	        echo " "
+       		exit 1
+	fi
+else
+	echo "[EROR] Your operating system or architecture could not be detected."
+	echo "[EROR] Report bugs at: github.com/corbindavenport/nexus-tools/issues"
+	echo "[EROR] Report the following information in the bug report:"
+	echo "[EROR] OS: $OS"
+	echo "[EROR] ARCH: $ARCH"
+	echo " "
+	exit 1
+fi
+
+# Infotext
+ADBINFO="[INFO] Downloading ADB for $INFO"
+FBINFO="[INFO] Downloading Fastboot for $INFO"
+UDEVINFO="[INFO] Downloading udev list..."
+
+# URL
+ADBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$ADBURL"
+FBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$FBURL"
+UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 
 # get sudo
 
@@ -36,72 +86,31 @@ if [ -f $FASTBOOT ]; then
     [ "$input" = "" ] && sudo rm $FASTBOOT || exit 1
 fi
 
-# detect operating system and install
+# install
 
-if [ "$OS" == "Darwin" ]; then # Mac OS X
-    echo "[INFO] Downloading ADB for Mac OS X..."
-    sudo curl -s -o $ADB "http://github.com/corbindavenport/nexus-tools/raw/master/bin/mac-adb" -LOk
-    echo "[INFO] Downloading Fastboot for Mac OS X..."
-    sudo curl -s -o $FASTBOOT "http://github.com/corbindavenport/nexus-tools/raw/master/bin/mac-fastboot" -LOk
-    echo "[INFO] Downloading udev list..."
+echo "$ADBINFO"
+sudo curl -s -o "$ADB" "$ADBURL" -LOk
+
+echo "$FBINFO"
+sudo curl -s -o "$FASTBOOT" "$FBURL" -LOk
+
+echo "$UDEVINFO"
     if [ -n "$UDEV" ]; then
         if [ ! -d /etc/udev/rules.d/ ]; then
             sudo mkdir -p /etc/udev/rules.d/
         fi
-        sudo curl -s -o $UDEV "http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt" -LOk
+	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
         sudo chmod 644 $UDEV
         sudo chown root. $UDEV 2>/dev/null
         sudo service udev restart 2>/dev/null
         sudo killall adb 2>/dev/null
     fi
-    echo "[INFO] Making ADB and Fastboot executable..."
-    sudo chmod +x $ADB
-    sudo chmod +x $FASTBOOT
-    echo "[ OK ] Done!"
-    echo "[INFO] Type adb or fastboot to run."
-    echo " "
-    exit 0
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then # Generic Linux
-    if [ "$ARCH" == "i386" ] || [ "$ARCH" == "i486" ] || [ "$ARCH" == "i586" ] || [ "$ARCH" == "amd64" ] || [ "$ARCH" == "x86_64" ] || [ "$ARCH" == "i686" ]; then # Linux on Intel x86/x86_64 CPU
-        echo "[INFO] Downloading ADB for Linux [Intel CPU]..."
-        sudo curl -s -o $ADB "http://github.com/corbindavenport/nexus-tools/raw/master/bin/linux-i386-adb" -LOk
-        echo "[INFO] Downloading Fastboot for Linux [Intel CPU]..."
-        sudo curl -s -o $FASTBOOT "http://github.com/corbindavenport/nexus-tools/raw/master/bin/linux-i386-fastboot" -LOk
-    elif [ "$ARCH" == "arm" ] || [ "$ARCH" == "armv6l" ]; then # Linux on ARM CPU
-        echo "[WARN] The ADB binaries for ARM are out of date, and do not work on Android 4.2.2+"
-        echo "[INFO] Downloading ADB for Linux [ARM CPU]..."
-        sudo curl -s -o $ADB "http://github.com/corbindavenport/nexus-tools/raw/master/bin/linux-arm-adb" -LOk
-        echo "[INFO] Downloading Fastboot for Linux [ARM CPU]..."
-        sudo curl -s -o $FASTBOOT "http://github.com/corbindavenport/nexus-tools/raw/master/bin/linux-arm-fastboot" -LOk
-    else
-    	echo "[EROR] Your CPU platform could not be detected."
-    	echo " "
-    	exit 1
-    fi
-    echo "[INFO] Downloading udev list..."
-    if [ -n "$UDEV" ]; then
-        if [ ! -d /etc/udev/rules.d/ ]; then
-            sudo mkdir -p /etc/udev/rules.d/
-        fi
-        sudo curl -s -o $UDEV "http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt" -LOk
-        sudo chmod 644 $UDEV
-        sudo chown root. $UDEV 2>/dev/null
-        sudo service udev restart 2>/dev/null
-        sudo killall adb 2>/dev/null
-    fi
-    echo "[INFO] Making ADB and Fastboot executable..."
-    sudo chmod +x $ADB
-    sudo chmod +x $FASTBOOT
-    echo "[ OK ] Done!"
-    echo "[INFO] Type adb or fastboot to run."
-    echo " "
-    exit 0
-else
-    echo "[EROR] Your operating system or architecture could not be detected."
-    echo "[EROR] Report bugs at: github.com/corbindavenport/nexus-tools/issues"
-    echo "[EROR] Report the following information in the bug report:"
-    echo "[EROR] OS: $OS"
-    echo "[EROR] ARCH: $ARCH"
-    echo " "
-    exit 1
-fi
+
+echo "[INFO] Making ADB and Fastboot executable..."
+sudo chmod +x "$ADB"
+sudo chmod +x "$FASTBOOT"
+
+echo "[ OK ] Done!"
+echo "[INFO] Type adb or fastboot to run."
+echo " "
+exit 0
