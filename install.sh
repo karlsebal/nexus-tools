@@ -15,6 +15,9 @@
 
 # TODO check success
 
+# TODO default to userspace.
+# TODO default to no udev
+
 ADB="/usr/bin/adb"
 FASTBOOT="/usr/bin/fastboot"
 UDEV="/etc/udev/rules.d/51-android.rules"
@@ -75,8 +78,6 @@ if [ -w "${ADB%/*}" ] && [ -w "${FASTBOOT%/*}" ]; then
 else
 	SUDO="sudo"
 fi
-
-echo "[INFO] Installing in $ADB and $FASTBOOT"
 
 ## letzgo!
 
@@ -170,6 +171,9 @@ echo "$UDEVINFO"
     fi
 
 echo "[INFO] Making ADB and Fastboot executable..."
+echo $ADB
+echo $FASTBOOT
+echo ----
 $SUDO chmod +x "$ADB"
 $SUDO chmod +x "$FASTBOOT"
 
