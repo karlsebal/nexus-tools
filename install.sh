@@ -13,6 +13,8 @@
 
 #!/bin/bash
 
+# TODO check success
+
 ADB="/usr/bin/adb"
 FASTBOOT="/usr/bin/fastboot"
 UDEV="/etc/udev/rules.d/51-android.rules"
@@ -20,25 +22,92 @@ OS=$(uname)
 ARCH=$(uname -m)
 KERN=$(uname -s)
 
+helptext() {
+	cat <<-ENDHELP
+
+	usage: $0 [-d directory] [-b]
+	
+	  -d, --install-directory [directory]	specifies the install-directory
+
+	  -b, --binary-only			do not install udev-rules
+
+ENDHELP
+}
+
+
+## parse options ##
+
+until [ -z "$1" ]; do
+	if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+		helptext
+		exit 0	
+	fi
+
+	if [ "$1" = "-b" ] || [ "$1" = "--binary-only" ]; then
+		UDEV=""
+	fi
+
+	if [ "$1" = "-d" ]; then
+	# different install dir
+	# TODO check if dir exists
+		# TODO use bash abilities
+		if [ -z "$2" ]; then
+		# no dir given, using pwd	
+			pwd=$(pwd)
+			ADB="${pwd%/}/adb"
+			FASTBOOT="${pwd%/}/fastboot"
+		else
+		# using given dir
+			ADB="${2%/}/adb"
+			FASTBOOT="${2%/}/fastboot"	
+		fi
+	fi
+	shift
+done
+
+
+if [ -w "${ADB%/*}" ] && [ -w "${FASTBOOT%/*}" ]; then
+# ADB and FASTBOOT userwritable
+	if [ -n "$UDEV" ]; then
+	# no udev install, so no sudo required
+		SUDO=""
+	fi
+else
+	SUDO="sudo"
+fi
+
+echo "[INFO] Installing in $ADB and $FASTBOOT"
+
+## letzgo!
+
+echo "[INFO] Nexus Tools 2.5-experimental"
+echo "[INFO] Installing in $ADB and $FASTBOOT"
+
+# get sudo if neccessary
+
+if [ -n "$SUDO" ]; then
+	echo "[INFO] Please enter sudo password for install."
+	sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
+fi
 
 # detect operating system and 
 # make urls and infos
 
-if [ "$OS" == "Darwin" ]; then # Mac OS X
+if [ "$OS" = "Darwin" ]; then # Mac OS X
 	INFO="Mac OS X..."
 	ADBURL="mac-adb"
 	FBURL="mac-fastboot"
 
-elif [ "$(expr substr $KERN 1 5)" == "Linux" ]; then # Generic Linux
+elif [ "$(expr substr $KERN 1 5)" = "Linux" ]; then # Generic Linux
 
-	if [ "$ARCH" == "i386" ] || [ "$ARCH" == "i486" ] || 
-		[ "$ARCH" == "i586" ] || [ "$ARCH" == "amd64" ] ||
-		[ "$ARCH" == "x86_64" ] || [ "$ARCH" == "i686" ]; then # Linux on Intel x86/x86_64 CPU
+	if [ "$ARCH" = "i386" ] || [ "$ARCH" = "i486" ] || 
+		[ "$ARCH" = "i586" ] || [ "$ARCH" = "amd64" ] ||
+		[ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then # Linux on Intel x86/x86_64 CPU
 		INFO="Linux [Intel CPU]..."
 		ADBURL="linux-i386-adb"
 		FBURL="linux-i386-fastboot"
 
-	elif [ "$ARCH" == "arm" ] || [ "$ARCH" == "armv6l" ]; then # Linux on ARM CPU
+	elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "armv6l" ]; then # Linux on ARM CPU
 		echo "[WARN] The ADB binaries for ARM are out of date, and do not work on Android 4.2.2+"
 		INFO="Linux [ARM CPU]..."
 		ADBURL="linux-arm-adb"
@@ -69,46 +138,40 @@ ADBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$ADBURL"
 FBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$FBURL"
 UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 
-# get sudo
-
-echo "[INFO] Nexus Tools 2.4.1"
-echo "[INFO] Please enter sudo password for install."
-sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
-
 # check if already installed
 
 if [ -f $ADB ]; then
     read -n1 -p "[WARN] ADB is already present, press ENTER to overwrite or exit to cancel." input
-    [ "$input" = "" ] && sudo rm $ADB || exit 1
+    [ "$input" = "" ] && $SUDO rm $ADB || exit 1
 fi
 if [ -f $FASTBOOT ]; then
     read -n1 -p "[WARN] Fastboot is already present, press ENTER to overwrite or exit to cancel." input
-    [ "$input" = "" ] && sudo rm $FASTBOOT || exit 1
+    [ "$input" = "" ] && $SUDO rm $FASTBOOT || exit 1
 fi
 
 # install
 
 echo "$ADBINFO"
-sudo curl -s -o "$ADB" "$ADBURL" -LOk
+$SUDO curl -s -o "$ADB" "$ADBURL" -LOk
 
 echo "$FBINFO"
-sudo curl -s -o "$FASTBOOT" "$FBURL" -LOk
+$SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
 
 echo "$UDEVINFO"
     if [ -n "$UDEV" ]; then
         if [ ! -d /etc/udev/rules.d/ ]; then
-            sudo mkdir -p /etc/udev/rules.d/
+            $SUDO mkdir -p /etc/udev/rules.d/
         fi
-	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
-        sudo chmod 644 $UDEV
-        sudo chown root. $UDEV 2>/dev/null
-        sudo service udev restart 2>/dev/null
-        sudo killall adb 2>/dev/null
+	$SUDO curl -s -o "$UDEV" "$UDEVURL" -LOk
+        $SUDO chmod 644 $UDEV
+        $SUDO chown root. $UDEV 2>/dev/null
+        $SUDO service udev restart 2>/dev/null
+        $SUDO killall adb 2>/dev/null
     fi
 
 echo "[INFO] Making ADB and Fastboot executable..."
-sudo chmod +x "$ADB"
-sudo chmod +x "$FASTBOOT"
+$SUDO chmod +x "$ADB"
+$SUDO chmod +x "$FASTBOOT"
 
 echo "[ OK ] Done!"
 echo "[INFO] Type adb or fastboot to run."
