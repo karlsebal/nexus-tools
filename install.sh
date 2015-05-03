@@ -161,13 +161,13 @@ $SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
 echo "$UDEVINFO"
     if [ -n "$UDEV" ]; then
         if [ ! -d /etc/udev/rules.d/ ]; then
-            $SUDO mkdir -p /etc/udev/rules.d/
+            sudo mkdir -p /etc/udev/rules.d/
         fi
-	$SUDO curl -s -o "$UDEV" "$UDEVURL" -LOk
-        $SUDO chmod 644 $UDEV
-        $SUDO chown root. $UDEV 2>/dev/null
-        $SUDO service udev restart 2>/dev/null
-        $SUDO killall adb 2>/dev/null
+	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
+        sudo chmod 644 $UDEV
+        sudo chown root. $UDEV 2>/dev/null
+        sudo service udev restart 2>/dev/null
+        sudo killall adb 2>/dev/null
     fi
 
 echo "[INFO] Making ADB and Fastboot executable..."
