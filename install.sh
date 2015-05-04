@@ -11,9 +11,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#!/bin/bash
+# This is my fork of corbindavenports script for installing adb and fastboot
+# I tried to enhance for exercise.
 
-# TODO check success
+#!/bin/bash
 
 ADB=""
 FASTBOOT=""
@@ -23,12 +24,14 @@ OS=$(uname)
 ARCH=$(uname -m)
 KERN=$(uname -s)
 
+VERSION="2.5-experimental"
+
 helptext() {
 	cat <<-ENDHELP
 
-	usage: $0 [-d directory] [-b]
+	usage: $0 [--root] [--install-directory|-d <directory>] [--install-rules|-r]
 	
-	  -d, --install-directory [directory]	specifies the install-directory
+	  -d, --install-directory <directory>	specifies the install-directory
 
 	  -r, --install-rules			install udev-rules
 
@@ -37,8 +40,17 @@ helptext() {
 ENDHELP
 }
 
+echo
+echo "[INFO] Nexus Tools $VERSION"
 
 ## parse options ##
+
+if [[ "$@" =~ -d && "$@" =~ --root ]]; then
+	echo "[ERROR] you cannot specify option --root along with -d"
+	echo
+	helptext
+	exit 1
+fi
 
 until [ -z "$1" ]; do
 	case "$1" in
@@ -50,29 +62,29 @@ until [ -z "$1" ]; do
 			UDEV="/etc/udev/rules.d/51-android.rules"
 			;;
 		"-d")
-			# TODO simplify
 			if [ -z "$2" ]; then
-			# no dir given, using PWD 
+				echo "[INFO] You did not specify a target directory."
 				ADB="${PWD%/}/adb"
 				FASTBOOT="${PWD%/}/fastboot"
+				echo "[INFO] Using $ADB and $FASTBOOT"
 			else
 			# using given dir
 				ADB="${2%/}/adb"
 				FASTBOOT="${2%/}/fastboot"	
-				
-				# check dirs
-				for dir in $ADB $FASTBOOT; do
-					dir=${dir%/*}
-					if [ ! -d $dir ]; then
-						echo "[ERROR] $dir is not a directory or does not exist"
-						exit 1
-					elif [ ! -w $dir ]; then
-						echo "[ERROR] $dir is not writable"
-						exit 1
-					fi
-				done
-
+				echo "[INFO] Using $ADB and $FASTBOOT"
 			fi
+
+			# check dirs
+			for dir in $ADB $FASTBOOT; do
+				dir=${dir%/*}
+				if [ ! -d $dir ]; then
+					echo "[ERROR] $dir is not a directory or does not exist"
+					exit 1
+				elif [ ! -w $dir ]; then
+					echo "[ERROR] $dir is not writable"
+					exit 1
+				fi
+			done
 			;;
 
 		"--root")
@@ -84,7 +96,9 @@ until [ -z "$1" ]; do
 	shift
 done
 
+
 # if ADB or FASTBOOT is unset, set it both
+
 if [ -z $ADB -o -z $FASTBOOT ]; then
 	# letz see if we have a standard home-bin
 	if [[ "$PATH" =~ $HOME/bin ]]; then
@@ -98,8 +112,9 @@ if [ -z $ADB -o -z $FASTBOOT ]; then
 	fi
 fi
 
-set -x
+
 # ADB and FASTBOOT not userwritable or UDEV to install
+
 if [[ ! (( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
 	SUDO="sudo"
 	echo "[INFO] Install as root"
@@ -107,15 +122,9 @@ if [[ ! (( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
 	echo "[INFO] Please enter sudo password for install."
 	sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
 fi
-set +x
 
 
-## letzgo!
-
-echo "[INFO] Nexus Tools 2.5-experimental"
-echo "[INFO] Installing $ADB and $FASTBOOT"
-
-# detect operating system and 
+# detect operating system
 # make urls and infos
 
 if [ "$OS" = "Darwin" ]; then # Mac OS X
@@ -139,7 +148,7 @@ elif [ "$(expr substr $KERN 1 5)" = "Linux" ]; then # Generic Linux
 		FBURL="linux-arm-fastboot"
 
 	else
-		echo "[EROR] Your CPU platform could not be detected."
+		echo "[ERROR] Your CPU platform could not be detected."
 	        echo " "
        		exit 1
 	fi
@@ -163,18 +172,22 @@ ADBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$ADBURL"
 FBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$FBURL"
 UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 
+
 # check if already installed
 
 if [ -f $ADB ]; then
     read -n1 -p "[WARN] ADB is already present, press ENTER to overwrite or exit to cancel." input
-    [ "$input" = "" ] && $SUDO rm $ADB || exit 1
+    [ -z "$input" ] && $SUDO rm $ADB || exit 1
 fi
 if [ -f $FASTBOOT ]; then
     read -n1 -p "[WARN] Fastboot is already present, press ENTER to overwrite or exit to cancel." input
-    [ "$input" = "" ] && $SUDO rm $FASTBOOT || exit 1
+    [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
 fi
 
+
 # install
+
+echo "[INFO] Installing $ADB and $FASTBOOT"
 
 echo "$ADBINFO"
 $SUDO curl -s -o "$ADB" "$ADBURL" -LOk
@@ -189,17 +202,20 @@ echo "$UDEVINFO"
         fi
 	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
         sudo chmod 644 $UDEV
-        sudo chown root. $UDEV 2>/dev/null
+        sudo chown root: $UDEV 2>/dev/null
         sudo service udev restart 2>/dev/null
         sudo killall adb 2>/dev/null
     fi
 
 echo "[INFO] Making ADB and Fastboot executable..."
-echo $ADB
-echo $FASTBOOT
-echo ----
+
+echo "$ADB"
 $SUDO chmod +x "$ADB"
+
+echo "$FASTBOOT"
 $SUDO chmod +x "$FASTBOOT"
+
+echo "----"
 
 echo "[ OK ] Done!"
 echo "[INFO] Type adb or fastboot to run."
