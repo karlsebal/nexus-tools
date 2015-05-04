@@ -16,11 +16,10 @@
 
 #!/bin/bash
 
-# TODO install rules only
-
 ADB=""
 FASTBOOT=""
 UDEV=""
+RULES="no"
 
 OS=$(uname)
 ARCH=$(uname -m)
@@ -41,6 +40,7 @@ helptext() {
 
 	  --root 				install in /usr/bin
 
+
 ENDHELP
 }
 
@@ -49,8 +49,15 @@ echo "[INFO] Nexus Tools $VERSION"
 
 ## parse options ##
 
-if [[ "$@" =~ -d && "$@" =~ --root ]]; then
+if [[ ("$@" =~ -d || "$@" =~ --install-directory) && "$@" =~ --root ]]; then
 	echo "[EROR] you cannot use option --root along with -d"
+	echo
+	helptext
+	exit 1
+fi
+
+if [[ ("$@" =~ -R || "$@" =~ --rules-only) && $# -ne 1 ]]; then
+	echo "[EROR] option -R|--rules-only does not apply with any other option"
 	echo
 	helptext
 	exit 1
@@ -62,8 +69,13 @@ until [ -z "$1" ]; do
 			helptext
 			exit 0
 			;;
-		"-r" | "--install-rules")
+		"-r" | "--install-rules") 
 			UDEV="/etc/udev/rules.d/51-android.rules"
+			RULES="yes"
+			;;
+		"-R" | "--rules-only")
+			UDEV="/etc/udev/rules.d/51-android.rules"
+			RULES="only"
 			;;
 		"-d")
 			if [ -z "$2" ]; then
@@ -104,71 +116,45 @@ until [ -z "$1" ]; do
 	shift
 done
 
-
-# if ADB or FASTBOOT is unset, set it both
-
-if [ -z $ADB -o -z $FASTBOOT ]; then
-	# letz see if we have a standard home-bin
-	if [[ "$PATH" =~ $HOME/bin ]]; then
-		echo "[INFO] Using standard home bin $HOME/bin"
-		ADB="$HOME/bin/adb"
-		FASTBOOT="$HOME/bin/fastboot"
-	else
-		echo "[INFO] No standard home bin found. Choosing root."
-		ADB="/usr/bin/adb"
-		FASTBOOT="/usr/bin/fastboot"
-	fi
-fi
-
-
-# ADB and FASTBOOT not userwritable or UDEV to install
-# we need sudo
-
-if [[ ! (( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
-	SUDO="sudo"
-	echo "[INFO] Install as root"
-	# get sudo
-	echo "[INFO] Please enter sudo password for install."
-	sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
-fi
-
-
 # detect operating system
 # make urls and infos
+# unless -R
 
-if [ "$OS" = "Darwin" ]; then # Mac OS X
-	INFO="Mac OS X..."
-	ADBURL="mac-adb"
-	FBURL="mac-fastboot"
+if [[ ! "$RULES" == "only" ]]; then
+	if [ "$OS" = "Darwin" ]; then # Mac OS X
+		INFO="Mac OS X..."
+		ADBURL="mac-adb"
+		FBURL="mac-fastboot"
 
-elif [ "${KERN:0:5}" = "Linux" ]; then # Generic Linux
+	elif [ "${KERN:0:5}" = "Linux" ]; then # Generic Linux
 
-	if [ "$ARCH" = "i386" ] || [ "$ARCH" = "i486" ] || 
-		[ "$ARCH" = "i586" ] || [ "$ARCH" = "amd64" ] ||
-		[ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then # Linux on Intel x86/x86_64 CPU
-		INFO="Linux [Intel CPU]..."
-		ADBURL="linux-i386-adb"
-		FBURL="linux-i386-fastboot"
+		if [ "$ARCH" = "i386" ] || [ "$ARCH" = "i486" ] || 
+			[ "$ARCH" = "i586" ] || [ "$ARCH" = "amd64" ] ||
+			[ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i686" ]; then # Linux on Intel x86/x86_64 CPU
+			INFO="Linux [Intel CPU]..."
+			ADBURL="linux-i386-adb"
+			FBURL="linux-i386-fastboot"
 
-	elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "armv6l" ]; then # Linux on ARM CPU
-		echo "[WARN] The ADB binaries for ARM are out of date, and do not work on Android 4.2.2+"
-		INFO="Linux [ARM CPU]..."
-		ADBURL="linux-arm-adb"
-		FBURL="linux-arm-fastboot"
+		elif [ "$ARCH" = "arm" ] || [ "$ARCH" = "armv6l" ]; then # Linux on ARM CPU
+			echo "[WARN] The ADB binaries for ARM are out of date, and do not work on Android 4.2.2+"
+			INFO="Linux [ARM CPU]..."
+			ADBURL="linux-arm-adb"
+			FBURL="linux-arm-fastboot"
 
+		else
+			echo "[ERROR] Your CPU platform could not be detected."
+			echo " "
+			exit 1
+		fi
 	else
-		echo "[ERROR] Your CPU platform could not be detected."
-	        echo " "
-       		exit 1
+		echo "[EROR] Your operating system or architecture could not be detected."
+		echo "[EROR] Report bugs at: github.com/corbindavenport/nexus-tools/issues"
+		echo "[EROR] Report the following information in the bug report:"
+		echo "[EROR] OS: $OS"
+		echo "[EROR] ARCH: $ARCH"
+		echo " "
+		exit 1
 	fi
-else
-	echo "[EROR] Your operating system or architecture could not be detected."
-	echo "[EROR] Report bugs at: github.com/corbindavenport/nexus-tools/issues"
-	echo "[EROR] Report the following information in the bug report:"
-	echo "[EROR] OS: $OS"
-	echo "[EROR] ARCH: $ARCH"
-	echo " "
-	exit 1
 fi
 
 # Infotext
@@ -182,27 +168,39 @@ FBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$FBURL"
 UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 
 
-# check if already installed
+# if ADB or FASTBOOT is unset, set it both
+# unless -R or --rules-only
 
-if [ -f $ADB ]; then
-    read -n1 -p "[WARN] ADB is already present, press ENTER to remove or x to cancel." input
-    [ -z "$input" ] && $SUDO rm $ADB || exit 1
+if [[ ! $RULES == "only" ]]; then
+	if [[ -z $ADB || -z $FASTBOOT ]]; then
+	# letz see if we have a standard home-bin
+		if [[ "$PATH" =~ $HOME/bin ]]; then
+			echo "[INFO] Using standard home bin $HOME/bin"
+			ADB="$HOME/bin/adb"
+			FASTBOOT="$HOME/bin/fastboot"
+		else
+			echo "[INFO] No standard home bin found. Choosing root."
+			ADB="/usr/bin/adb"
+			FASTBOOT="/usr/bin/fastboot"
+		fi
+	fi
 fi
-if [ -f $FASTBOOT ]; then
-    read -n1 -p "[WARN] Fastboot is already present, press ENTER to remove or x to cancel." input
-    [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
+
+
+# ADB and FASTBOOT not userwritable or UDEV to install
+# we need sudo
+
+if [[  (! ( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
+	SUDO="sudo"
+	echo "[INFO] Install as root"
+	# get sudo
+	echo "[INFO] Please enter sudo password for install."
+	sudo echo "[ OK ] Sudo access granted." || { echo "[EROR] No sudo access."; exit 1; }
 fi
 
 
 # install
-
-echo "[INFO] Installing $ADB and $FASTBOOT"
-
-echo "$ADBINFO"
-$SUDO curl -s -o "$ADB" "$ADBURL" -LOk
-
-echo "$FBINFO"
-$SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
+# udev
 
 echo "$UDEVINFO"
     if [ -n "$UDEV" ]; then
@@ -215,6 +213,36 @@ echo "$UDEVINFO"
         sudo service udev restart 2>/dev/null
         sudo killall adb 2>/dev/null
     fi
+
+[[ "$RULES" == "only" ]] && { echo Done.; exit 0; }
+
+
+echo "[INFO] Installing $ADB and $FASTBOOT"
+
+
+# adb
+
+if [ -f $ADB ]; then
+    read -n1 -p "[WARN] ADB is already present, press ENTER to remove or x to cancel." input
+	[ -z "$input" ] && $SUDO rm $ADB || exit 1
+fi
+
+echo "$ADBINFO"
+$SUDO curl -s -o "$ADB" "$ADBURL" -LOk
+	
+
+# fastboot
+
+if [ -f $FASTBOOT ]; then
+    read -n1 -p "[WARN] Fastboot is already present, press ENTER to remove or x to cancel." input
+    [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
+fi
+
+echo "$FBINFO"
+$SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
+
+
+# set executable
 
 echo "[INFO] Set $ADB executable"
 $SUDO chmod +x "$ADB"
