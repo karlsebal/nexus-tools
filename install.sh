@@ -15,12 +15,10 @@
 
 # TODO check success
 
-# TODO default to userspace.
-# TODO default to no udev
+ADB=""
+FASTBOOT=""
+UDEV=""
 
-ADB="/usr/bin/adb"
-FASTBOOT="/usr/bin/fastboot"
-UDEV="/etc/udev/rules.d/51-android.rules"
 OS=$(uname)
 ARCH=$(uname -m)
 KERN=$(uname -s)
@@ -32,7 +30,9 @@ helptext() {
 	
 	  -d, --install-directory [directory]	specifies the install-directory
 
-	  -b, --binary-only			do not install udev-rules
+	  -r, --install-rules			install udev-rules
+
+	  --root 				install in /usr/bin
 
 ENDHELP
 }
@@ -46,49 +46,74 @@ until [ -z "$1" ]; do
 			helptext
 			exit 0
 			;;
-		"-b" | "--binary-only")
-			UDEV=""
+		"-r" | "--install-rules")
+			UDEV="/etc/udev/rules.d/51-android.rules"
 			;;
 		"-d")
-			# TODO check if dir exists
-			# TODO use bash abilities
+			# TODO simplify
 			if [ -z "$2" ]; then
-			# no dir given, using pwd	
-				pwd=$(pwd)
-				ADB="${pwd%/}/adb"
-				FASTBOOT="${pwd%/}/fastboot"
+			# no dir given, using PWD 
+				ADB="${PWD%/}/adb"
+				FASTBOOT="${PWD%/}/fastboot"
 			else
 			# using given dir
 				ADB="${2%/}/adb"
 				FASTBOOT="${2%/}/fastboot"	
+				
+				# check dirs
+				for dir in $ADB $FASTBOOT; do
+					dir=${dir%/*}
+					if [ ! -d $dir ]; then
+						echo "[ERROR] $dir is not a directory or does not exist"
+						exit 1
+					elif [ ! -w $dir ]; then
+						echo "[ERROR] $dir is not writable"
+						exit 1
+					fi
+				done
+
 			fi
 			;;
+
+		"--root")
+			ADB="/usr/bin/adb"
+			FASTBOOT="/usr/bin/fastboot"
+			;;
 	esac
+
 	shift
 done
 
-
-if [ -w "${ADB%/*}" ] && [ -w "${FASTBOOT%/*}" ]; then
-# ADB and FASTBOOT userwritable
-	if [ -n "$UDEV" ]; then
-	# no udev install, so no sudo required
-		SUDO=""
+# if ADB or FASTBOOT is unset, set it both
+if [ -z $ADB -o -z $FASTBOOT ]; then
+	# letz see if we have a standard home-bin
+	if [[ "$PATH" =~ $HOME/bin ]]; then
+		echo [INFO] Using standard home bin $HOME/bin
+		ADB="$HOME/bin/adb"
+		FASTBOOT="$HOME/bin/fastboot"
+	else
+		echo [INFO] No standard home bin found. Choosing root.
+		ADB="/usr/bin/adb"
+		FASTBOOT="/usr/bin/fastboot"
 	fi
-else
-	SUDO="sudo"
 fi
+
+set -x
+# ADB and FASTBOOT not userwritable or UDEV to install
+if [[ ! (( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
+	SUDO="sudo"
+	echo "[INFO] Install as root"
+	# get sudo
+	echo "[INFO] Please enter sudo password for install."
+	sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
+fi
+set +x
+
 
 ## letzgo!
 
 echo "[INFO] Nexus Tools 2.5-experimental"
-echo "[INFO] Installing in $ADB and $FASTBOOT"
-
-# get sudo if neccessary
-
-if [ -n "$SUDO" ]; then
-	echo "[INFO] Please enter sudo password for install."
-	sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access!!"; exit 1; }
-fi
+echo "[INFO] Installing $ADB and $FASTBOOT"
 
 # detect operating system and 
 # make urls and infos
