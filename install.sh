@@ -46,7 +46,7 @@ echo "[INFO] Nexus Tools $VERSION"
 ## parse options ##
 
 if [[ "$@" =~ -d && "$@" =~ --root ]]; then
-	echo "[ERROR] you cannot specify option --root along with -d"
+	echo "[ERROR] you cannot use option --root along with -d"
 	echo
 	helptext
 	exit 1
@@ -114,6 +114,7 @@ fi
 
 
 # ADB and FASTBOOT not userwritable or UDEV to install
+# we need sudo
 
 if [[ ! (( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
 	SUDO="sudo"
