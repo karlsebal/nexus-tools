@@ -102,11 +102,11 @@ done
 if [ -z $ADB -o -z $FASTBOOT ]; then
 	# letz see if we have a standard home-bin
 	if [[ "$PATH" =~ $HOME/bin ]]; then
-		echo [INFO] Using standard home bin $HOME/bin
+		echo "[INFO] Using standard home bin $HOME/bin"
 		ADB="$HOME/bin/adb"
 		FASTBOOT="$HOME/bin/fastboot"
 	else
-		echo [INFO] No standard home bin found. Choosing root.
+		echo "[INFO] No standard home bin found. Choosing root."
 		ADB="/usr/bin/adb"
 		FASTBOOT="/usr/bin/fastboot"
 	fi
@@ -133,7 +133,7 @@ if [ "$OS" = "Darwin" ]; then # Mac OS X
 	ADBURL="mac-adb"
 	FBURL="mac-fastboot"
 
-elif [ "$(expr substr $KERN 1 5)" = "Linux" ]; then # Generic Linux
+elif [ "${KERN:0:5}" = "Linux" ]; then # Generic Linux
 
 	if [ "$ARCH" = "i386" ] || [ "$ARCH" = "i486" ] || 
 		[ "$ARCH" = "i586" ] || [ "$ARCH" = "amd64" ] ||
@@ -208,17 +208,14 @@ echo "$UDEVINFO"
         sudo killall adb 2>/dev/null
     fi
 
-echo "[INFO] Making ADB and Fastboot executable..."
-
-echo "$ADB"
+echo "[INFO] Set $ADB executable"
 $SUDO chmod +x "$ADB"
 
-echo "$FASTBOOT"
+echo "[INFO] Set $FASTBOOT executable"
 $SUDO chmod +x "$FASTBOOT"
 
 echo "----"
 
-echo "[ OK ] Done!"
-echo "[INFO] Type adb or fastboot to run."
-echo " "
+echo "Done. Type adb or fastboot to run."
+echo
 exit 0

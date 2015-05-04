@@ -13,6 +13,8 @@
 
 #!/bin/bash
 
+# TODO check install pathes.
+
 ADB="/usr/bin/adb"
 FASTBOOT="/usr/bin/fastboot"
 UDEV="/etc/udev/rules.d/51-android.rules"
