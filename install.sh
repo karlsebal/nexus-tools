@@ -41,30 +41,29 @@ ENDHELP
 ## parse options ##
 
 until [ -z "$1" ]; do
-	if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
-		helptext
-		exit 0	
-	fi
-
-	if [ "$1" = "-b" ] || [ "$1" = "--binary-only" ]; then
-		UDEV=""
-	fi
-
-	if [ "$1" = "-d" ]; then
-	# different install dir
-	# TODO check if dir exists
-		# TODO use bash abilities
-		if [ -z "$2" ]; then
-		# no dir given, using pwd	
-			pwd=$(pwd)
-			ADB="${pwd%/}/adb"
-			FASTBOOT="${pwd%/}/fastboot"
-		else
-		# using given dir
-			ADB="${2%/}/adb"
-			FASTBOOT="${2%/}/fastboot"	
-		fi
-	fi
+	case "$1" in
+		"-h" | "--help")
+			helptext
+			exit 0
+			;;
+		"-b" | "--binary-only")
+			UDEV=""
+			;;
+		"-d")
+			# TODO check if dir exists
+			# TODO use bash abilities
+			if [ -z "$2" ]; then
+			# no dir given, using pwd	
+				pwd=$(pwd)
+				ADB="${pwd%/}/adb"
+				FASTBOOT="${pwd%/}/fastboot"
+			else
+			# using given dir
+				ADB="${2%/}/adb"
+				FASTBOOT="${2%/}/fastboot"	
+			fi
+			;;
+	esac
 	shift
 done
 
