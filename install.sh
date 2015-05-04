@@ -16,6 +16,8 @@
 
 #!/bin/bash
 
+# TODO install rules only
+
 ADB=""
 FASTBOOT=""
 UDEV=""
@@ -35,6 +37,8 @@ helptext() {
 
 	  -r, --install-rules			install udev-rules
 
+	  -R, --rules-only			install only rules
+
 	  --root 				install in /usr/bin
 
 ENDHELP
@@ -46,7 +50,7 @@ echo "[INFO] Nexus Tools $VERSION"
 ## parse options ##
 
 if [[ "$@" =~ -d && "$@" =~ --root ]]; then
-	echo "[ERROR] you cannot use option --root along with -d"
+	echo "[EROR] you cannot use option --root along with -d"
 	echo
 	helptext
 	exit 1
@@ -78,10 +82,10 @@ until [ -z "$1" ]; do
 			for dir in $ADB $FASTBOOT; do
 				dir=${dir%/*}
 				if [ ! -d $dir ]; then
-					echo "[ERROR] $dir is not a directory or does not exist"
+					echo "[EROR] $dir is not a directory or does not exist"
 					exit 1
 				elif [ ! -w $dir ]; then
-					echo "[ERROR] $dir is not writable"
+					echo "[EROR] $dir is not writable"
 					exit 1
 				fi
 			done
@@ -90,6 +94,10 @@ until [ -z "$1" ]; do
 		"--root")
 			ADB="/usr/bin/adb"
 			FASTBOOT="/usr/bin/fastboot"
+			;;
+
+		*)
+			echo "[WARN] Unknown option $1 "
 			;;
 	esac
 
@@ -177,11 +185,11 @@ UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 # check if already installed
 
 if [ -f $ADB ]; then
-    read -n1 -p "[WARN] ADB is already present, press ENTER to overwrite or exit to cancel." input
+    read -n1 -p "[WARN] ADB is already present, press ENTER to remove or x to cancel." input
     [ -z "$input" ] && $SUDO rm $ADB || exit 1
 fi
 if [ -f $FASTBOOT ]; then
-    read -n1 -p "[WARN] Fastboot is already present, press ENTER to overwrite or exit to cancel." input
+    read -n1 -p "[WARN] Fastboot is already present, press ENTER to remove or x to cancel." input
     [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
 fi
 
