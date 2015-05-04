@@ -163,9 +163,9 @@ FBINFO="[INFO] Downloading Fastboot for $INFO"
 UDEVINFO="[INFO] Downloading udev list..."
 
 # URL
-ADBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$ADBURL"
-FBURL="http://github.com/corbindavenport/nexus-tools/raw/master/$FBURL"
-UDEVURL="http://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
+ADBURL="https://github.com/corbindavenport/nexus-tools/raw/master/bin/$ADBURL"
+FBURL="https://github.com/corbindavenport/nexus-tools/raw/master/bin/$FBURL"
+UDEVURL="https://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
 
 
 # if ADB or FASTBOOT is unset, set it both
@@ -202,23 +202,24 @@ fi
 # install
 # udev
 
-echo "$UDEVINFO"
-    if [ -n "$UDEV" ]; then
-        if [ ! -d /etc/udev/rules.d/ ]; then
-            sudo mkdir -p /etc/udev/rules.d/
-        fi
+if [ -n "$UDEV" ]; then
+	echo "$UDEVINFO"
+
+	if [ ! -d /etc/udev/rules.d/ ]; then
+	    sudo mkdir -p /etc/udev/rules.d/
+	fi
+
 	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
-        sudo chmod 644 $UDEV
-        sudo chown root: $UDEV 2>/dev/null
-        sudo service udev restart 2>/dev/null
-        sudo killall adb 2>/dev/null
-    fi
+	sudo chmod 644 $UDEV
+	sudo chown root: $UDEV 2>/dev/null
+	sudo service udev restart 2>/dev/null
+	sudo killall adb 2>/dev/null
+fi
 
 [[ "$RULES" == "only" ]] && { echo Done.; exit 0; }
 
 
 echo "[INFO] Installing $ADB and $FASTBOOT"
-
 
 # adb
 
@@ -240,6 +241,7 @@ fi
 
 echo "$FBINFO"
 $SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
+
 
 
 # set executable
