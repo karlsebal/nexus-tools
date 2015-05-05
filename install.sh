@@ -39,7 +39,7 @@ helptext() {
 
 	  -r, --install-rules			install udev-rules
 
-	  -R, --rules-only			install only rules
+	  -R, --rules-only			install udev-rules only
 
 	  --root 				install in /usr/bin
 
@@ -265,7 +265,7 @@ $SUDO chmod +x "$FASTBOOT"
 
 echo "----"
 
-if [ -z $XCODE ]; then
+if [ $XCODE -eq 0 ]; then
 	echo "Done. Type adb or fastboot to run."
 else
 	echo "Done. But something went wrong."
