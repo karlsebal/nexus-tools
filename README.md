@@ -3,20 +3,30 @@
 
 Nexus Tools is an installer for the Android debug/development command-line tools ADB (Android Device Bridge) and Fastboot for Mac OS X and Linux. 
 
-This is karlsebals fork of corbindavenports original script, which requires download for if you run it without any options it will try to install adb and fastboot into your /home/<user>/bin without installing udev-rules.
+This is karlsebals fork of corbindavenports original script, which may require download for if you run it without any options it will try to install adb and fastboot into your /home/<user>/bin without installing udev-rules.
 
 The script will download the files it needs during runtime, so it requires an internet connection. The script works on both Mac OS X and Linux (as long as the curl package is installed).
 
-Nexus Tools requires sudo privileges if you want to install/uninstall the adb and fastboot tools to /usr/bin
+Nexus Tools requires sudo privileges if you want to install/uninstall the adb and fastboot tools to /usr/bin or any other directory not writable by user.
 
 ---------------------------------------
 
-__Alternate Install__
+__Install__
 
-If you have errors with the above install command, you can try this one:
+You can either run the script on-the-fly by
 
 ```
-cd ~ && curl -s -o ./install.sh "http://github.com/corbindavenport/nexus-tools/raw/master/install.sh" -LOk && chmod +x ./install.sh && ./install.sh && rm ./install.sh
+bash < (https://github.com/karlsebal/nexus-tools/raw/master/install.sh)
+```
+
+or run it from local copy 
+
+```
+cd ~ 
+curl "http://github.com/karlsebal/nexus-tools/raw/master/install.sh" -LOks
+chmod +x ./install.sh 
+./install.sh 
+rm ./install.sh
 ```
 
 and to un-install:
@@ -24,6 +34,10 @@ and to un-install:
 ```
 cd ~ && curl -s -o ./uninstall.sh "http://github.com/corbindavenport/nexus-tools/raw/master/uninstall.sh" -LOk && chmod +x ./uninstall.sh && ./uninstall.sh && rm ./uninstall.sh
 ```
+
+NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin.
+
+
 ---------------------------------------
 
 __XDA Thread:__ [http://forum.xda-developers.com/showthread.php?t=2564453](http://forum.xda-developers.com/showthread.php?t=2564453)
