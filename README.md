@@ -38,6 +38,7 @@ cd ~ && curl -s -o ./uninstall.sh "http://github.com/corbindavenport/nexus-tools
 NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin.
 
 
+=======
 ---------------------------------------
 
 __XDA Thread:__ [http://forum.xda-developers.com/showthread.php?t=2564453](http://forum.xda-developers.com/showthread.php?t=2564453)
