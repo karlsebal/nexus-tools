@@ -49,7 +49,7 @@ ENDHELP
 
 # download <file> <url>
 download() {
-	$SUDO curl -o "$1" "$2" -fOLks && 
+	$SUDO curl -o "$1" "$2" -Lfks && 
 		echo "[INFO] Download successful." || 
 		{ echo "[EROR] Download failed."; XCODE=1; }
 }
