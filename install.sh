@@ -19,7 +19,10 @@
 ADB=""
 FASTBOOT=""
 UDEV=""
+SUDO=""
 RULES="no"
+
+XCODE=0
 
 OS=$(uname)
 ARCH=$(uname -m)
@@ -44,8 +47,16 @@ helptext() {
 ENDHELP
 }
 
+# download <file> <url>
+download() {
+	$SUDO curl -o "$1" "$2" -fOLks && 
+		echo "[INFO] Download successful." || 
+		{ echo "[EROR] Download failed."; XCODE=1; }
+}
+
 echo
 echo "[INFO] Nexus Tools $VERSION"
+
 
 ## parse options ##
 
@@ -209,7 +220,7 @@ if [ -n "$UDEV" ]; then
 	    sudo mkdir -p /etc/udev/rules.d/
 	fi
 
-	sudo curl -s -o "$UDEV" "$UDEVURL" -LOk
+	download "$UDEV" "$UDEVURL"
 	sudo chmod 644 $UDEV
 	sudo chown root: $UDEV 2>/dev/null
 	sudo service udev restart 2>/dev/null
@@ -229,7 +240,7 @@ if [ -f $ADB ]; then
 fi
 
 echo "$ADBINFO"
-$SUDO curl -s -o "$ADB" "$ADBURL" -LOk
+download "$ADB" "$ADBURL"
 	
 
 # fastboot
@@ -240,7 +251,7 @@ if [ -f $FASTBOOT ]; then
 fi
 
 echo "$FBINFO"
-$SUDO curl -s -o "$FASTBOOT" "$FBURL" -LOk
+download "$FASTBOOT" "$FBURL"
 
 
 
@@ -254,6 +265,11 @@ $SUDO chmod +x "$FASTBOOT"
 
 echo "----"
 
-echo "Done. Type adb or fastboot to run."
+if [ -z $XCODE ]; then
+	echo "Done. Type adb or fastboot to run."
+else
+	echo "Done. But something went wrong."
+fi
+
 echo
-exit 0
+exit $XCODE
