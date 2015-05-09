@@ -49,7 +49,7 @@ helptext() {
 	${0##*/} defaults to install into <userhome>/bin if found, if not it will
 	choose /usr/bin and ask for sudo password. If you want to install the
 	udev-rules use option --install-rules for they are not always required. 
-	You can try without installing them first. You can do this later by
+	You can try without installing them first and do this later by
 	giving the --rules-only option.
 
 ENDHELP
