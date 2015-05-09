@@ -32,7 +32,7 @@ KERN=$(uname -s)
 
 VERSION="2.5-us"
 
-helptext() {
+_helptext() {
 	cat <<-ENDHELP
 
 	usage: $0 [--root] [--install-directory|-d <directory>] [--install-rules|-r]
@@ -53,6 +53,12 @@ helptext() {
 	giving the --rules-only option.
 
 ENDHELP
+}
+
+
+_get_sudo() {
+	echo "[INFO] Please enter sudo password for install."
+	sudo echo "[ OK ] Sudo access granted." || { echo "[EROR] No sudo access."; exit 1; }
 }
 
 
@@ -105,21 +111,21 @@ echo
 if [[ ("$@" =~ -d || "$@" =~ --install-directory) && "$@" =~ --root ]]; then
 	echo "[EROR] you cannot use option --root along with -d"
 	echo
-	helptext
+	_helptext
 	exit 1
 fi
 
 if [[ ("$@" =~ -R || "$@" =~ --rules-only) && $# -ne 1 ]]; then
 	echo "[EROR] option -R|--rules-only does not apply with any other option"
 	echo
-	helptext
+	_helptext
 	exit 1
 fi
 
 until [ -z "$1" ]; do
 	case "$1" in
 		"-h" | "--help")
-			helptext
+			_helptext
 			exit 0
 			;;
 		"-r" | "--install-rules") 
@@ -150,8 +156,9 @@ until [ -z "$1" ]; do
 					echo "[EROR] $dir is not a directory or does not exist"
 					exit 1
 				elif [ ! -w $dir ]; then
-					echo "[EROR] $dir is not writable"
-					exit 1
+					echo "[WARN] $dir is not writable"
+					echo "[INFO] try sudo"
+					_get_sudo
 				fi
 			done
 			;;
@@ -247,9 +254,6 @@ fi
 if [[  (! ( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
 	SUDO="sudo"
 	echo "[INFO] Install as root"
-	# get sudo
-	echo "[INFO] Please enter sudo password for install."
-	sudo echo "[ OK ] Sudo access granted." || { echo "[EROR] No sudo access."; exit 1; }
 fi
 
 
