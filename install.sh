@@ -101,8 +101,7 @@ _install_udev() {
 
 
 echo
-echo "[INFO] Nexus Tools $VERSION"
-echo "[INFO] user space version"
+echo "[INFO] Nexus Tools $VERSION - user space version"
 echo "[INFO] Forked from https://github.com/corbindavenport/nexus-tools"
 echo 
 
@@ -155,10 +154,6 @@ until [ -z "$1" ]; do
 				if [ ! -d $dir ]; then
 					echo "[EROR] $dir is not a directory or does not exist"
 					exit 1
-				elif [ ! -w $dir ]; then
-					echo "[WARN] $dir is not writable"
-					echo "[INFO] try sudo"
-					_get_sudo
 				fi
 			done
 			;;
@@ -253,7 +248,9 @@ fi
 
 if [[  (! ( -w "${ADB%/*}" && -w "${FASTBOOT%/*}" ) || ( -n "$UDEV" )) ]]; then
 	SUDO="sudo"
+	echo "[INFO] ${ADB%/*} not user writable."
 	echo "[INFO] Install as root"
+	_get_sudo
 fi
 
 
