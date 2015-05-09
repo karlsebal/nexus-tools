@@ -3,7 +3,7 @@
 
 Nexus Tools is an installer for the Android debug/development command-line tools ADB (Android Device Bridge) and Fastboot for Mac OS X and Linux. 
 
-This is karlsebals fork of corbindavenports original script, which may require download for if you run it without any options it will try to install adb and fastboot into your /home/<user>/bin without installing udev-rules.
+This is karlsebals fork of corbindavenports original script, which may require download for if you run it without any options it will try to install adb and fastboot into your /home/\<user\>/bin without installing udev-rules.
 
 The script will download the files it needs during runtime, so it requires an internet connection. The script works on both Mac OS X and Linux (as long as the curl package is installed).
 
@@ -35,11 +35,16 @@ and to un-install:
 cd ~ && curl -s -o ./uninstall.sh "http://github.com/corbindavenport/nexus-tools/raw/master/uninstall.sh" -LOk && chmod +x ./uninstall.sh && ./uninstall.sh && rm ./uninstall.sh
 ```
 
-NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin.
+NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin. It is only useful when you have a root install or want you udev rules to be removed. To uninstall userspace or any other directory than /usr/bin you have do remove adb and fastboot bins manually.
 
 
 =======
 ---------------------------------------
+
+
+__fork from__ [corbindavenport] (https://github.com/corbindavenport/nexus-tools)
+
+__XDA Article:__ [http://www.xda-developers.com/android/set-up-adb-and...](http://www.xda-developers.com/android/set-up-adb-and-fastboot-on-linux-mac-os-x-and-chrome-os-with-a-single-command/)
 
 __XDA Thread:__ [http://forum.xda-developers.com/showthread.php?t=2564453](http://forum.xda-developers.com/showthread.php?t=2564453)
 
