@@ -53,7 +53,7 @@ ENDHELP
 # _install(<DEST>, <URL>, <INFOTEXT>)
 _install() {
 	echo "$3"
-	sudo curl -Lfks -o "$1" "$2" && echo "[INFO] Success." || { echo "[EROR] Download failed."; XCODE=1; }
+	$SUDO curl -Lfks -o "$1" "$2" && echo "[INFO] Success." || { echo "[EROR] Download failed."; XCODE=1; }
 }
 
 _install_udev() {
@@ -209,8 +209,8 @@ FBINFO="[INFO] Downloading Fastboot for $INFO"
 UDEVINFO="[INFO] Downloading udev list..."
 
 # URL
-ADBURL="$BASEURL/$ADBURL"
-FBURL="$BASEURL/$FBURL"
+ADBURL="$BASEURL/bin/$ADBURL"
+FBURL="$BASEURL/bin/$FBURL"
 UDEVURL="$BASEURL/udev.txt"
 
 
@@ -247,7 +247,7 @@ fi
 
 # install
 
-_install_udev
+[[ "$RULES" == "yes" || "$RULES" == "only" ]] && _install_udev
 [[ "$RULES" == "only" ]] && { echo Done.; exit 0; }
 
 
@@ -274,8 +274,8 @@ _install "$FASTBOOT" "$FBURL" "$FBINFO"
 
 
 echo "[INFO] Set ADB and Fastboot executable..."
-output=$(sudo chmod +x $ADB 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
-output=$(sudo chmod +x $FASTBOOT 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
+output=$($SUDO chmod +x $ADB 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
+output=$($SUDO chmod +x $FASTBOOT 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
 
 
 if [ $XCODE -eq 0 ]; then
