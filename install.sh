@@ -24,6 +24,8 @@ RULES="no"
 
 XCODE=0
 
+BASEURL="http://github.com/corbindavenport/nexus-tools/raw/master"
+
 OS=$(uname)
 ARCH=$(uname -m)
 KERN=$(uname -s)
@@ -47,12 +49,44 @@ helptext() {
 ENDHELP
 }
 
-# download <file> <url>
-download() {
-	$SUDO curl -o "$1" "$2" -Lfks && 
-		echo "[INFO] Download successful." || 
-		{ echo "[EROR] Download failed."; XCODE=1; }
+
+# _install(<DEST>, <URL>, <INFOTEXT>)
+_install() {
+	echo "$3"
+	sudo curl -Lfks -o "$1" "$2" && echo "[INFO] Success." || { echo "[EROR] Download failed."; XCODE=1; }
 }
+
+_install_udev() {
+	if [ ! -d /etc/udev/rules.d/ ]; then
+	    sudo mkdir -p /etc/udev/rules.d/
+	fi
+
+	local install=1
+
+	if [ -f "$UDEV" ]; then
+		echo "[WARN] Udev rules are already present, press ENTER to overwrite or x to skip"
+		read -sn1 input 
+		[ "$input" = "" ] &&  sudo rm "$UDEV" || install=0
+	fi
+
+	if [ $install -eq 1 ]; then
+
+		echo "[INFO] Downloading udev list..."
+		_install "$UDEV" "$BASEURL/udev.txt"
+
+		echo "[INFO] Fix permissions"
+		output=$(sudo chmod 644 $UDEV 2>&1) && echo "[ OK ] Fixed." || { echo "[EROR] $output"; XCODE=1; }
+
+		echo "[INFO] Fix ownership"
+		output=$(sudo chown root: $UDEV 2>&1) && echo "[ OK ] Fixed." || { echo "[EROR] $output"; XCODE=1; }
+
+		sudo service udev restart 2>/dev/null >&2
+		sudo killall adb 2>/dev/null >&2
+	else
+		echo "[INFO] Skip.."
+	fi
+}
+
 
 echo
 echo "[INFO] Nexus Tools $VERSION"
@@ -131,7 +165,7 @@ done
 # make urls and infos
 # unless -R
 
-if [[ ! "$RULES" == "only" ]]; then
+if [[ "$RULES" != "only" ]]; then
 	if [ "$OS" = "Darwin" ]; then # Mac OS X
 		INFO="Mac OS X..."
 		ADBURL="mac-adb"
@@ -168,15 +202,16 @@ if [[ ! "$RULES" == "only" ]]; then
 	fi
 fi
 
+
 # Infotext
 ADBINFO="[INFO] Downloading ADB for $INFO"
 FBINFO="[INFO] Downloading Fastboot for $INFO"
 UDEVINFO="[INFO] Downloading udev list..."
 
 # URL
-ADBURL="https://github.com/corbindavenport/nexus-tools/raw/master/bin/$ADBURL"
-FBURL="https://github.com/corbindavenport/nexus-tools/raw/master/bin/$FBURL"
-UDEVURL="https://github.com/corbindavenport/nexus-tools/raw/master/udev.txt"
+ADBURL="$BASEURL/$ADBURL"
+FBURL="$BASEURL/$FBURL"
+UDEVURL="$BASEURL/udev.txt"
 
 
 # if ADB or FASTBOOT is unset, set it both
@@ -211,22 +246,8 @@ fi
 
 
 # install
-# udev
 
-if [ -n "$UDEV" ]; then
-	echo "$UDEVINFO"
-
-	if [ ! -d /etc/udev/rules.d/ ]; then
-	    sudo mkdir -p /etc/udev/rules.d/
-	fi
-
-	download "$UDEV" "$UDEVURL"
-	sudo chmod 644 $UDEV
-	sudo chown root: $UDEV 2>/dev/null
-	sudo service udev restart 2>/dev/null
-	sudo killall adb 2>/dev/null
-fi
-
+_install_udev
 [[ "$RULES" == "only" ]] && { echo Done.; exit 0; }
 
 
@@ -239,8 +260,7 @@ if [ -f $ADB ]; then
 	[ -z "$input" ] && $SUDO rm $ADB || exit 1
 fi
 
-echo "$ADBINFO"
-download "$ADB" "$ADBURL"
+_install "$ADB" "$ADBURL" "$ADBINFO"
 	
 
 # fastboot
@@ -250,26 +270,21 @@ if [ -f $FASTBOOT ]; then
     [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
 fi
 
-echo "$FBINFO"
-download "$FASTBOOT" "$FBURL"
+_install "$FASTBOOT" "$FBURL" "$FBINFO"
 
 
+echo "[INFO] Set ADB and Fastboot executable..."
+output=$(sudo chmod +x $ADB 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
+output=$(sudo chmod +x $FASTBOOT 2>&1) && echo "[INFO] OK" || { echo "[EROR] $output"; XCODE=1; }
 
-# set executable
-
-echo "[INFO] Set $ADB executable"
-$SUDO chmod +x "$ADB"
-
-echo "[INFO] Set $FASTBOOT executable"
-$SUDO chmod +x "$FASTBOOT"
-
-echo "----"
 
 if [ $XCODE -eq 0 ]; then
-	echo "Done. Type adb or fastboot to run."
-else
-	echo "Done. But something went wrong."
+	echo "[ OK ] Done!"
+	echo "[INFO] Type adb or fastboot to run."
+    else
+    	echo "[EROR] Install failed."
+	echo "[EROR] Report bugs at: github.com/corbindavenport/nexus-tools/issues"
 fi
 
-echo
+echo " "
 exit $XCODE
