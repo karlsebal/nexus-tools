@@ -19,7 +19,7 @@ You can either run the script on-the-fly by
 bash < (https://github.com/karlsebal/nexus-tools/raw/master/install.sh)
 ```
 
-or run it from local copy 
+taking the disadvantages mentioned above, or run it from local copy 
 
 ```
 cd ~ 

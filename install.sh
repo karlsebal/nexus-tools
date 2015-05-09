@@ -30,7 +30,7 @@ OS=$(uname)
 ARCH=$(uname -m)
 KERN=$(uname -s)
 
-VERSION="2.5-experimental"
+VERSION="2.5-us"
 
 helptext() {
 	cat <<-ENDHELP
@@ -45,6 +45,12 @@ helptext() {
 
 	  --root 				install in /usr/bin
 
+	
+	${0##*/} defaults to install into <userhome>/bin if found, if not it will
+	choose /usr/bin and ask for sudo password. If you want to install the
+	udev-rules use option --install-rules for they are not always required. 
+	You can try without installing them first. You can do this later by
+	giving the --rules-only option.
 
 ENDHELP
 }
@@ -90,7 +96,9 @@ _install_udev() {
 
 echo
 echo "[INFO] Nexus Tools $VERSION"
-
+echo "[INFO] user space version"
+echo "[INFO] Forked from https://github.com/corbindavenport/nexus-tools"
+echo 
 
 ## parse options ##
 

@@ -19,8 +19,24 @@ ADB="/usr/bin/adb"
 FASTBOOT="/usr/bin/fastboot"
 UDEV="/etc/udev/rules.d/51-android.rules"
 
+# info
+cat <<-EOT
+
+	[INFO] The uninstaller provided here is not fit for installations
+	[INFO] done by version 2.5-us. It will try to remove the bins from
+	[INFO] /usr/bin regardless of where the bins are actually located. 
+	[INFO] It will also try to remove udev rules. If you have installed
+	[INFO] in root this may be what you want to do.
+
+EOT
+
+read -n1 -p"To proceed hit <ENTER> or anything else to abort." input
+[[ -n "$input" ]] && { echo; exit 0; }
+echo
+
 # get sudo
 
+echo
 echo "[INFO] Nexus Tools 2.3"
 echo "[INFO] Please enter sudo password for uninstall."
 sudo echo "[ OK ] Sudo access granted." || { echo "[ERROR] No sudo access."; exit 1; }
