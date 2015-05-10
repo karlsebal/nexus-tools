@@ -39,8 +39,9 @@ _helptext() {
 	cat <<-ENDHELP
 
 	usage: $0 [--root] [--install-directory|-d <directory>] [--install-rules|-r]
-			[--uninstall|-u [<directory>] ] [--uninstall-with-rules|U [<directory>] ]
-	
+	            [--uninstall|-u [<directory>] ] [--uninstall-with-rules|U [<directory>] ]
+
+
 	  -d, --install-directory <directory>		install into <directory>
 
 	  -r, --install-rules				install udev-rules
@@ -149,7 +150,7 @@ _try_remove() {
 
 _uninstall() {
 	# if $1 is given but is no directory
-	[[ -n $1 && ! -d $1 ]] && { echo "[ERROR] $1 is not a directory."; XCODE=1; return; } 
+	[[ -n $1 && ! -d $1 ]] && { echo "[EROR] $1 is not a directory."; XCODE=1; return; } 
 	# if $1 is given and not user writable or udev to uninstall
 	[[ (! -w $1 && -n $1) || -n $UDEV ]] && _get_sudo
 	# remove udev if requested

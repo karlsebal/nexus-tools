@@ -27,6 +27,8 @@ cat <<-EOT
 	[INFO] /usr/bin regardless of where the bins are actually located. 
 	[INFO] It will also try to remove udev rules. If you have installed
 	[INFO] in root this may be what you want to do.
+	[INFO] If you installed userspace please run setup with option -u
+	[INFO] or simply remove adb and fastboot manually in $HOME/bin.
 
 EOT
 
