@@ -3,7 +3,9 @@
 
 Nexus Tools is an installer for the Android debug/development command-line tools ADB (Android Device Bridge) and Fastboot for Mac OS X and Linux. 
 
-This is karlsebals fork of corbindavenports original script, which may require download for if you run it without any options it will try to install adb and fastboot into your /home/\<user\>/bin without installing udev-rules.
+This is karlsebals fork of corbindavenports original script for his exercise and your convenience. It may be neccessary to download the script for if you run it without any options it will try to install adb and fastboot into your /home/\<user\>/bin without installing udev-rules.
+
+The adb and fastboot binaries are still downloaded from corbindavenports repo. If you want to install adb and fastboot root along with udev rules you can use his script as well.
 
 The script will download the files it needs during runtime, so it requires an internet connection. The script works on both Mac OS X and Linux (as long as the curl package is installed).
 

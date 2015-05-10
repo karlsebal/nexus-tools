@@ -16,6 +16,8 @@
 
 #!/bin/bash
 
+### TODO default to uninstall $HOME/bin only.
+
 ADB=""
 FASTBOOT=""
 UDEV=""
@@ -25,6 +27,7 @@ RULES="no"
 XCODE=0
 
 BASEURL="http://github.com/corbindavenport/nexus-tools/raw/master"
+UPATH="/etc/udev/rules.d/51-android.rules"
 
 OS=$(uname)
 ARCH=$(uname -m)
@@ -36,14 +39,20 @@ _helptext() {
 	cat <<-ENDHELP
 
 	usage: $0 [--root] [--install-directory|-d <directory>] [--install-rules|-r]
+			[--uninstall|-u [<directory>] ] [--uninstall-with-rules|U [<directory>] ]
 	
-	  -d, --install-directory <directory>	specifies the install-directory
+	  -d, --install-directory <directory>		install into <directory>
 
-	  -r, --install-rules			install udev-rules
+	  -r, --install-rules				install udev-rules
 
-	  -R, --rules-only			install udev-rules only
+	  -R, --rules-only				install udev-rules only
 
-	  --root 				install in /usr/bin
+	  --root 					install in /usr/bin
+
+
+	  --uninstall, -u [<directory>]			uninstall, leave udev rules
+
+	  --uninstall-with-rules, -U [<directory>]	uninstall along with udev-rules
 
 	
 	${0##*/} defaults to install into <userhome>/bin if found, if not it will
@@ -52,12 +61,15 @@ _helptext() {
 	You can try without installing them first and do this later by
 	giving the --rules-only option.
 
+	If uninstalling and no directory is given ${0##*/} will try to remove first
+	in $HOME/bin and when neither adb nor fastboot is found there in /usr/bin.
+
 ENDHELP
 }
 
 
 _get_sudo() {
-	echo "[INFO] Please enter sudo password for install."
+	echo "[INFO] We need root access here."
 	sudo echo "[ OK ] Sudo access granted." || { echo "[EROR] No sudo access."; exit 1; }
 }
 
@@ -98,6 +110,54 @@ _install_udev() {
 	fi
 }
 
+# removes adb and fastboot in $1
+_remove() {
+	if [[ -e "$1/adb" ]]; then
+		echo [INFO] Removing "$1"/adb ..
+		output=$($SUDO rm -v "$1/adb" 2>&1) && echo "[INFO] $output" || { echo [EROR] "$output"; XCODE=1; }
+	else
+		echo [INFO] "$1"/adb does not exist
+	fi
+	if [[ -e "$1/fastboot" ]]; then
+		echo [INFO] Removing "$1"/fastboot ..
+		output=$($SUDO rm -v "$1/fastboot" 2>&1) && echo "[INFO] $output" || { echo [EROR] "$output"; XCODE=1; }
+	else
+		echo [INFO] "$1"/fastboot does not exist
+	fi
+}
+
+_remove_udev() {
+	echo [INFO] Removing "$UDEV"
+	output=$(sudo rm "$UDEV" 2>&1) && echo [ OK ] || { echo [EROR] "$output"; XCODE=1; }
+}
+
+# try remove in <HOME>/bin or /usr/bin
+_try_remove() {
+	# first try $HOME/bin
+	[[ -e ${HOME%/}/bin/adb || -e ${HOME%/}/bin/fastboot ]] && { _remove "${HOME%/}/bin"; return; }
+
+	echo "[INFO] No installation found in $HOME/bin. Choosing /usr/bin ."
+
+	if [[ -e /usr/bin/adb || -e /usr/bin/fastboot ]]; then
+		_get_sudo
+		_remove /usr/bin
+	else
+		echo "[EROR] No installation found in /usr/bin."
+		XCODE=1
+	fi
+}
+
+_uninstall() {
+	# if $1 is given but is no directory
+	[[ -n $1 && ! -d $1 ]] && { echo "[ERROR] $1 is not a directory."; XCODE=1; return; } 
+	# if $1 is given and not user writable or udev to uninstall
+	[[ (! -w $1 && -n $1) || -n $UDEV ]] && _get_sudo
+	# remove udev if requested
+	[[ -n $UDEV ]] && _remove_udev
+	# either remove adb/fastboot in $1 or try remove
+	[[ -n $1 ]] && _remove $1 || _try_remove
+}
+
 
 echo
 echo "[INFO] Nexus Tools $VERSION - user space version"
@@ -120,21 +180,28 @@ if [[ ("$@" =~ -R || "$@" =~ --rules-only) && $# -ne 1 ]]; then
 	exit 1
 fi
 
+if [[ ("$@" =~ -u || "$@" =~ -U || "$@" =~ --uninstall || "$@" =~ --uninstall-with-rules) &&
+	! ("$1" == "-u" || "$1" == "-U" || "$1" == "--uninstall" || "$1" == "--uninstall-with-rules") ]]; then
+	
+	echo -e "[EROR] Uninstall option must always be the first one.\n"
+	exit 1
+fi
+
 until [ -z "$1" ]; do
 	case "$1" in
-		"-h" | "--help")
+		-h | --help)
 			_helptext
 			exit 0
 			;;
-		"-r" | "--install-rules") 
-			UDEV="/etc/udev/rules.d/51-android.rules"
+		-r | --install-rules) 
+			UDEV="$UPATH"
 			RULES="yes"
 			;;
-		"-R" | "--rules-only")
-			UDEV="/etc/udev/rules.d/51-android.rules"
+		-R | --rules-only)
+			UDEV="$UPATH"
 			RULES="only"
 			;;
-		"-d")
+		-d)
 			if [ -z "$2" ]; then
 				echo "[INFO] You did not specify a target directory."
 				ADB="${PWD%/}/adb"
@@ -157,13 +224,40 @@ until [ -z "$1" ]; do
 			done
 			;;
 
-		"--root")
+		--root)
 			ADB="/usr/bin/adb"
 			FASTBOOT="/usr/bin/fastboot"
 			;;
 
+		--uninstall | -u)
+			_uninstall "${2%/}"
+
+			if [[ $XCODE -eq 0 ]]; then
+				echo -e "[DONE] No errors.\n"
+			else
+				echo "[WARN] Errors during uninstall"
+				echo -e "[DONE] Report bugs at http://github.com/karlsebal/nexus-tools\n"
+			fi
+
+			exit $XCODE
+			;;
+
+		--uninstall-with-rules | -U)
+			UDEV="$UPATH"
+			_uninstall "${2%/}"
+
+			if [[ $XCODE -eq 0 ]]; then
+				echo -e "[DONE] No errors.\n"
+			else
+				echo "[WARN] Errors during uninstall"
+				echo -e "[DONE] Report bugs at http://github.com/karlsebal/nexus-tools\n"
+			fi
+
+			exit $XCODE
+			;;
 		*)
-			echo "[WARN] Unknown option $1 "
+			echo -e "[WARN] Unknown option $1\n"
+			exit 1
 			;;
 	esac
 
@@ -265,7 +359,7 @@ echo "[INFO] Installing $ADB and $FASTBOOT"
 
 if [ -f $ADB ]; then
     read -n1 -p "[WARN] ADB is already present, press ENTER to remove or x to cancel." input
-	[ -z "$input" ] && $SUDO rm $ADB || exit 1
+	[ -z "$input" ] && $SUDO rm $ADB || { echo -e \n; exit 1; }
 fi
 
 _install "$ADB" "$ADBURL" "$ADBINFO"
@@ -275,7 +369,7 @@ _install "$ADB" "$ADBURL" "$ADBINFO"
 
 if [ -f $FASTBOOT ]; then
     read -n1 -p "[WARN] Fastboot is already present, press ENTER to remove or x to cancel." input
-    [ -z "$input" ] && $SUDO rm $FASTBOOT || exit 1
+    [ -z "$input" ] && $SUDO rm $FASTBOOT || { echo -e \n; exit 1; }
 fi
 
 _install "$FASTBOOT" "$FBURL" "$FBINFO"
