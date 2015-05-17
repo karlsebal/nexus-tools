@@ -15,6 +15,16 @@ Nexus Tools requires sudo privileges if you want to install/uninstall the adb an
 
 __Install__
 
+Please use setup for it contains an uninstaller. Download and run it by
+```
+curl -LOks "https://raw.githubusercontent.com/karlsebal/nexus-tools/userspace/setup"
+chmod +x setup
+./setup
+```
+This will install adb into $HOME/bin without udev rules, if no home bin is found, it will try root. For more options and informations for uninstall call with --help.
+
+You are free to use the old installer as well if you so wish.
+
 You can either run the script on-the-fly by
 
 ```
@@ -34,7 +44,7 @@ rm ./install.sh
 and to un-install:
 
 ```
-cd ~ && curl -s -o ./uninstall.sh "http://github.com/corbindavenport/nexus-tools/raw/master/uninstall.sh" -LOk && chmod +x ./uninstall.sh && ./uninstall.sh && rm ./uninstall.sh
+cd ~ && curl -s -o ./uninstall.sh "http://github.com/karlsebal/nexus-tools/raw/master/uninstall.sh" -LOk && chmod +x ./uninstall.sh && ./uninstall.sh && rm ./uninstall.sh
 ```
 
 NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin. It is only useful when you have a root install or want you udev rules to be removed. To uninstall userspace or any other directory than /usr/bin you have do remove adb and fastboot bins manually.
