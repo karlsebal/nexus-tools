@@ -47,7 +47,7 @@ and to un-install:
 cd ~ && curl -s -o ./uninstall.sh "http://github.com/karlsebal/nexus-tools/raw/master/uninstall.sh" -LOk && chmod +x ./uninstall.sh && ./uninstall.sh && rm ./uninstall.sh
 ```
 
-NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin. It is only useful when you have a root install or want you udev rules to be removed. To uninstall userspace or any other directory than /usr/bin you have do remove adb and fastboot bins manually.
+NOTE! The uninstaller is not fit for this version because it expects the bins to be in /usr/bin. It is only useful when you have a root install or want you udev rules to be removed. To uninstall userspace or any other directory than /usr/bin you have do remove adb and fastboot bins manually or just use the uninstaller included in setup.
 
 
 =======
